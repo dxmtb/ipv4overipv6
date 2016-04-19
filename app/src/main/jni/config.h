@@ -1,0 +1,21 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define SERVER_IP "2402:f000:1:4417::900"
+#define PORT 5678
+
+#define IP_INFO_PIPE "ip_info_pipe"
+#define TRAFFIC_INFO_PIPE "traffic_info_pipe"
+
+#define MAX_HEARTBEAT_SEC 60
+#define MAX_BUF_LEN 4096
+
+enum {
+  TYPE_IP_ADDR_REQUEST = 100,
+  TYPE_IP_ADDR_RESPONSE = 101,
+  TYPE_NETWORK_REQUEST = 102,
+  TYPE_NETWORK_RESPONSE = 103,
+  TYPE_HEARTBEAT = 104,
+};
+
+#endif /* CONFIG_H */
