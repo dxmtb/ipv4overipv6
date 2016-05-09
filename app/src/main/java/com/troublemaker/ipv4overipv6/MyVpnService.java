@@ -53,6 +53,7 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
         }
         ipFlag = false;
         mThread = new Thread(this, "MyVpnThread");
+        Log.d(TAG,"thread start");
         mThread.start();
         return START_STICKY;
     }
