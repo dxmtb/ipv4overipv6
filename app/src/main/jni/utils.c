@@ -26,7 +26,7 @@ ssize_t write_s(int fd, const void *buf, size_t count) {
 }
 
 void send_server_message(int sockfd, char type, void *payload, int payload_len) {
-  struct Message msg;
+  static struct Message msg;
 
   if (payload_len > 0) {
     if (!payload) {

@@ -30,7 +30,7 @@ void handle_network_response(const struct FileDescriptors *fds, char *payload, i
 }
 
 void handle_server_msg(const struct FileDescriptors *fds) {
-    char type, payload[4096];
+    static char type, payload[MAX_BUF_LEN];
     int payload_length;
     read_msg(fds->server_fd, &type, payload, &payload_length);
     switch (type) {
@@ -60,7 +60,7 @@ bool handle_timer_msg(const struct FileDescriptors *fds) {
 }
 
 void handle_tun_msg(const struct FileDescriptors *fds) {
-    char payload[MAX_BUF_LEN];
+    static char payload[MAX_BUF_LEN];
 
     int payload_length = read(fds->tun_fd, payload, sizeof(payload));
 
@@ -168,7 +168,7 @@ char* init(struct FileDescriptors *fds) {
     send_server_message(fds->server_fd, 100, NULL, 0);
 
     int payload_length;
-    char type, payload[4096];
+    static char type, payload[MAX_BUF_LEN];
 
     read_msg(fds->server_fd, &type, payload, &payload_length);
 
