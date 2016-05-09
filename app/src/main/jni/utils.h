@@ -5,8 +5,10 @@
 #ifndef IPV4OVERIPV6_UTILS_H
 #define IPV4OVERIPV6_UTILS_H
 
-#include <android/log.h>
 #include <stdlib.h>
+
+#ifdef __ANDROID__
+#include <android/log.h>
 
 #define LOG_TAG "4Over6Backend"
 
@@ -14,6 +16,11 @@
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#else
+#include <stdio.h>
+#define LOGE printf
+#define LOGW printf
+#endif
 
 ssize_t write_s(int fd, const void *buf, size_t count);
 void send_int(int sockfd, int payload);

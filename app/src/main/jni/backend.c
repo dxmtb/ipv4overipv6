@@ -1,20 +1,22 @@
 #include <time.h>
 #include <unistd.h>
-#include <sys/epoll.h>
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-#include <sys/timerfd.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#ifdef __ANDROID__
+#include <sys/epoll.h>
+#include <sys/timerfd.h>
+#endif
 
 #include "config.h"
 #include "utils.h"
 
-struct FileDescriptors {
-    int server_fd, tun_fd, ip_info_fd, traffic_info_fd, timer_fd;
-};
+#include "backend.h"
 
 static clock_t last_heartbeat;
 
@@ -28,8 +30,8 @@ void handle_network_response(const struct FileDescriptors *fds, char *payload, i
 }
 
 void handle_server_msg(const struct FileDescriptors *fds) {
-    int type, payload_length;
-    char payload[4096];
+    char type, payload[4096];
+    int payload_length;
     read_msg(fds->server_fd, &type, payload, &payload_length);
     switch (type) {
         case TYPE_NETWORK_RESPONSE:
@@ -65,6 +67,32 @@ void handle_tun_msg(const struct FileDescriptors *fds) {
     send_server_message(fds->server_fd, TYPE_NETWORK_REQUEST, payload, payload_length);
 }
 
+int connect_to_server(const char *ip_addr, int port) {
+    int sockfd = socket(PF_INET6, SOCK_STREAM, 0);
+
+    if (sockfd == -1) {
+        LOGE("Failed to create socket\n");
+    }
+
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(port);
+
+    if (inet_pton(AF_INET6, ip_addr, &addr.sin6_addr) < 0) {
+        LOGE("Failed in inet_pton");
+    }
+
+    if (connect(sockfd, (const struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        LOGE("Failed to connect to [%s]:%d\n", ip_addr, port);
+        exit(0);
+    }
+
+    return sockfd;
+}
+
+
+#ifdef __ANDROID__
 void run_event_loop(int loop, const struct FileDescriptors *fds) {
 #define MAX_EVENTS 10
     struct epoll_event events[MAX_EVENTS];
@@ -121,17 +149,7 @@ int create_timer_fd() {
         LOGE("timerfd_settime");
 }
 
-int read_tun_fd(int fd) {
-    int ret;
-    read_auto(fd, &ret);
-    return ret;
-}
-
 void start(struct FileDescriptors *fds) {
-    fds->tun_fd = read_tun_fd(fds->ip_info_fd);
-    close(fds->ip_info_fd);
-    fds->ip_info_fd = -1;
-
     int event_loop = create_event_loop();
 
     fds->timer_fd = create_timer_fd();
@@ -143,65 +161,30 @@ void start(struct FileDescriptors *fds) {
     run_event_loop(event_loop, fds);
 }
 
-int connect_to_server(const char *ip_addr, int port) {
-    int sockfd = socket(PF_INET6, SOCK_STREAM, 0);
-
-    if (sockfd == -1) {
-        LOGE("Failed to create socket\n");
-    }
-
-    struct sockaddr_in6 addr;
-    addr.sin6_family = AF_INET6;
-    addr.sin6_port = htons(PORT);
-
-    if (inet_pton(AF_INET6, ip_addr, &addr.sin6_addr) < 0) {
-        LOGE("Failed in inet_pton");
-    }
-
-    if (connect(sockfd, &addr, sizeof(addr)) < 0) {
-        LOGE("Failed to connect to [%s]:%d\n", SERVER_IP, PORT);
-        exit(0);
-    }
-
-    return sockfd;
-}
-
-
-void handle_ip_response(int ip_info_fd, char *payload, int payload_length) {
-    write_s(ip_info_fd, payload, payload_length);
-}
-
-struct FileDescriptors *init() {
-    // Create pipes
-    mknod(IP_INFO_PIPE, S_IFIFO | 0666, 0);
-    mknod(TRAFFIC_INFO_PIPE, S_IFIFO | 0666, 0);
-
-    static struct FileDescriptors fds;
-
-    fds.server_fd = connect_to_server(SERVER_IP, PORT);
+char* init(struct FileDescriptors *fds) {
+    fds->server_fd = connect_to_server(SERVER_IP, PORT);
 
     // Request ipv4 addr
-    send_server_message(fds.server_fd, 100, NULL, 0);
+    send_server_message(fds->server_fd, 100, NULL, 0);
 
-    int type, payload_length;
-    char payload[4096];
+    int payload_length;
+    char type, payload[4096];
 
-    read_msg(fds.server_fd, &type, payload, &payload_length);
+    read_msg(fds->server_fd, &type, payload, &payload_length);
 
     if (type != 101) {
         LOGE("unexpected response type: %d\n", type);
         return NULL;
     }
 
-    fds.ip_info_fd = open(IP_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
-    if (fds.ip_info_fd == -1)
-        LOGE("Failed to open %s", IP_INFO_PIPE);
-    handle_ip_response(fds.ip_info_fd, payload, payload_length);
-    handle_heartbeat();
+    payload[payload_length] = 0;
 
-    fds.ip_info_fd = open(TRAFFIC_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
-    if (fds.ip_info_fd == -1)
+    handle_heartbeat(); // init heartbeat time.
+
+    fds->traffic_info_fd = open(TRAFFIC_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
+    if (fds->traffic_info_fd == -1)
         LOGE("Failed to open %s", TRAFFIC_INFO_PIPE);
 
-    return &fds;
+    return payload;
 }
+#endif

@@ -4,7 +4,6 @@
 #define SERVER_IP "2402:f000:1:4417::900"
 #define PORT 5678
 
-#define IP_INFO_PIPE "ip_info_pipe"
 #define TRAFFIC_INFO_PIPE "traffic_info_pipe"
 
 #define MAX_HEARTBEAT_SEC 60

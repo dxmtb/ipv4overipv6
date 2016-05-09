@@ -85,15 +85,14 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
     static {
         System.loadLibrary("myvpnservice");
     }
-    public native boolean initBackend();
-    public native void startBackend();
+    public native String initBackend();
+    public native void startBackend(int tunFd);
 
     @Override
     public synchronized void run() {
-        if (!initBackend()) {
-            Log.d(TAG, "Failed to init backend");
-            return;
-        }
+        String ip_info = initBackend();
+
+        // TODO: implement handle ip info
 
         try {
             extDir = Environment.getExternalStorageDirectory();//获取当前路径

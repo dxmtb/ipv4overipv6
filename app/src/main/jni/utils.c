@@ -3,8 +3,16 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include <string.h>
+
 #include "utils.h"
 #include "config.h"
+
+struct Message {
+  int length;
+  char type;
+  char data[4096];
+};
 
 ssize_t write_s(int fd, const void *buf, size_t count) {
   ssize_t ret = write(fd, buf, count);
@@ -17,28 +25,25 @@ ssize_t write_s(int fd, const void *buf, size_t count) {
   return ret;
 }
 
-void send_int(int sockfd, int payload) {
-  payload = htons(payload);
-  write_s(sockfd, &payload, sizeof(payload));
-}
-
-void send_char(int sockfd, char payload) {
-  write_s(sockfd, &payload, sizeof(payload));
-}
-
 void send_server_message(int sockfd, char type, void *payload, int payload_len) {
-  int total_length = sizeof(int) + sizeof(char) + payload_len;
-
-  send_int(sockfd, total_length);
-  send_char(sockfd, type);
+  struct Message msg;
 
   if (payload_len > 0) {
     if (!payload) {
       LOGE("Payload is null but paylaod_len is %d", payload_len);
       return;
     }
-    write_s(sockfd, payload, payload_len);
+    if (payload_len > sizeof(msg.data)) {
+      LOGE("Payload len too large: %d\n", payload_len);
+      return;
+    }
   }
+
+  msg.length = sizeof(int) + sizeof(char) + payload_len;
+  msg.type = type;
+  memcpy(msg.data, payload, payload_len);
+
+  write_s(sockfd, &msg, msg.length);
 }
 
 void read_len(int fd, void *buf, int len) {
