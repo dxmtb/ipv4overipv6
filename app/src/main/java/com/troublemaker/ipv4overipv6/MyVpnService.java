@@ -92,38 +92,33 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
     @Override
     public synchronized void run() {
         String ip_info = initBackend();
+        Log.d(TAG,ip_info);
 
-        // TODO: implement handle ip info
 
         try {
             extDir = Environment.getExternalStorageDirectory();//获取当前路径
-            ipFile = new File(extDir,"ip_pipe");
-            ipFileOutputStream = new FileOutputStream(ipFile);
-            ipOut = new BufferedOutputStream(ipFileOutputStream);
-            ipFileInputStream = new FileInputStream(ipFile);
-            ipIn = new BufferedInputStream(ipFileInputStream);
+            //Log.d(TAG,extDir.toString());
 
-            trafficFile = new File(extDir,"traffic_pipe");
-            trafficFileOutputStream = new FileOutputStream(trafficFile);
-            trafficOut = new BufferedOutputStream(trafficFileOutputStream);
-            trafficFileInputStream = new FileInputStream(trafficFile);
-            trafficIn = new BufferedInputStream(trafficFileInputStream);
+//            trafficFile = new File(extDir,"traffic_pipe");
+//            trafficFileOutputStream = new FileOutputStream(trafficFile);
+//            trafficOut = new BufferedOutputStream(trafficFileOutputStream);
+//            trafficFileInputStream = new FileInputStream(trafficFile);
+//            trafficIn = new BufferedInputStream(trafficFileInputStream);
 
             while (true){
                 if (!ipFlag){
-                    int readIPLen = ipIn.read(readIPBuf);
-                    if (readIPLen>0){
-                        startVPN(readIPBuf.toString());
+                    if (ip_info.length()>0){
+                        startVPN(ip_info);
                         ipFlag = true;
-                        ipIn.close();
                     }
                 }else{
-                    int readTrafficLen = trafficIn.read(readTrafficBuf);
-                    if (readTrafficLen>0){
-                        showTraffic(readTrafficBuf);
-                        Toast.makeText(getApplicationContext(), readTrafficBuf.toString(),
-                                Toast.LENGTH_SHORT).show();
-                    }
+                    Log.d(TAG,"XXXXXXXXXXXXXXXXXXXXXXXXX");
+//                    int readTrafficLen = trafficIn.read(readTrafficBuf);
+//                    if (readTrafficLen>0){
+//                        showTraffic(readTrafficBuf);
+//                        Toast.makeText(getApplicationContext(), readTrafficBuf.toString(),
+//                                Toast.LENGTH_SHORT).show();
+//                    }
                 }
                 Thread.sleep(2000);
             }
@@ -147,30 +142,13 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
 
     private void startVPN(String parameters) throws Exception {
         Builder builder = new Builder();
-        for (String parameter : parameters.split(" ")) {
-            String[] fields = parameter.split(",");
-            try {
-                switch (fields[0].charAt(0)) {
-                    case 'm':
-                        builder.setMtu(Short.parseShort(fields[1]));
-                        break;
-                    case 'a':
-                        builder.addAddress(fields[1], Integer.parseInt(fields[2]));
-                        break;
-                    case 'r':
-                        builder.addRoute(fields[1], Integer.parseInt(fields[2]));
-                        break;
-                    case 'd':
-                        builder.addDnsServer(fields[1]);
-                        break;
-                    case 's':
-                        builder.addSearchDomain(fields[1]);
-                        break;
-                }
-            } catch (Exception e) {
-                throw new IllegalArgumentException("Bad parameter: " + parameter);
-            }
-        }
+        String[] strs = parameters.split(" ");
+        builder.setMtu(1500);
+        builder.addAddress(strs[0], 32);
+        builder.addRoute(strs[1], 0);
+        builder.addDnsServer(strs[2]);
+        builder.addDnsServer(strs[3]);
+        builder.addDnsServer(strs[4]);
         try {
             myinterface.close();
         } catch (Exception e) {
@@ -182,9 +160,8 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
                 .establish();
         myParameters = parameters;
         int k = myinterface.getFd();
-        ipOut.write((byte)k);
-        ipOut.flush();
-        ipOut.close();
+        Log.d(TAG,k+"");
+        startBackend(k);
     }
     private void showTraffic(byte[] data) throws Exception {
         //handle the traffic
