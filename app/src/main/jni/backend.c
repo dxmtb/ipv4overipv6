@@ -25,6 +25,7 @@ void handle_heartbeat() {
 
 void handle_network_response(const struct FileDescriptors *fds, char *payload, int payload_length) {
     write_s(fds->tun_fd, payload, payload_length);
+    payload_length = -payload_length;
     write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
 }
 
@@ -70,6 +71,7 @@ void handle_tun_msg(const struct FileDescriptors *fds) {
     int payload_length = read(fds->tun_fd, payload, sizeof(payload));
 
     send_server_message(fds->server_fd, TYPE_NETWORK_REQUEST, payload, payload_length);
+    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
 }
 
 int connect_to_server(const char *ip_addr, int port) {
