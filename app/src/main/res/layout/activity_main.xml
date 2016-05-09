@@ -7,6 +7,12 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.troublemaker.ipv4overipv6.MainActivity">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Hello World!" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/showText"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="77dp"
+        android:text="xxxxxxx" />
 </RelativeLayout>
