@@ -26,7 +26,7 @@ void handle_heartbeat() {
 
 void handle_network_response(const struct FileDescriptors *fds, char *payload, int payload_length) {
     write_s(fds->tun_fd, payload, payload_length);
-    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
+//    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
 }
 
 void handle_server_msg(const struct FileDescriptors *fds) {
@@ -181,9 +181,9 @@ char* init(struct FileDescriptors *fds) {
 
     handle_heartbeat(); // init heartbeat time.
 
-    fds->traffic_info_fd = open(TRAFFIC_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
-    if (fds->traffic_info_fd == -1)
-        LOGE("Failed to open %s", TRAFFIC_INFO_PIPE);
+//    fds->traffic_info_fd = open(TRAFFIC_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
+//    if (fds->traffic_info_fd == -1)
+//        LOGE("Failed to open %s", TRAFFIC_INFO_PIPE);
 
     return payload;
 }
