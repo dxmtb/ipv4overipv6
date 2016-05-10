@@ -6,7 +6,6 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #ifdef __ANDROID__
 #include <sys/epoll.h>
@@ -18,21 +17,24 @@
 
 #include "backend.h"
 
-static clock_t last_heartbeat;
+static time_t last_heartbeat;
 
 void handle_heartbeat() {
-    last_heartbeat = clock();
+    last_heartbeat = time(0);
 }
 
 void handle_network_response(const struct FileDescriptors *fds, char *payload, int payload_length) {
     write_s(fds->tun_fd, payload, payload_length);
-//    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
+    payload_length = -payload_length;
+    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
+    LOGI("pack from server len %d", payload_length);
 }
 
 void handle_server_msg(const struct FileDescriptors *fds) {
     static char type, payload[MAX_BUF_LEN];
     int payload_length;
     read_msg(fds->server_fd, &type, payload, &payload_length);
+    LOGI("handle_server_msg type %d", type);
     switch (type) {
         case TYPE_NETWORK_RESPONSE:
             handle_network_response(fds, payload, payload_length);
@@ -47,24 +49,32 @@ void handle_server_msg(const struct FileDescriptors *fds) {
 }
 
 bool handle_timer_msg(const struct FileDescriptors *fds) {
+    LOGI("handle_timer_msg");
     uint64_t exp;
     read_auto(fds->timer_fd, &exp);
 
-    int sec = (clock() - last_heartbeat) / CLOCKS_PER_SEC;
+    double sec = difftime(time(0), last_heartbeat);
     if (sec > MAX_HEARTBEAT_SEC) {
+        LOGW("heartbeat timeout");
         close(fds->server_fd);
         return false;
     }
+
+    send_server_message(fds->server_fd, TYPE_HEARTBEAT, NULL, 0);
 
     return true;
 }
 
 void handle_tun_msg(const struct FileDescriptors *fds) {
+    LOGI("handle_tun_msg");
     static char payload[MAX_BUF_LEN];
 
     int payload_length = read(fds->tun_fd, payload, sizeof(payload));
 
     send_server_message(fds->server_fd, TYPE_NETWORK_REQUEST, payload, payload_length);
+    write_s(fds->traffic_info_fd, &payload_length, sizeof(payload_length));
+
+    LOGI("pack from local len %d", payload_length);
 }
 
 int connect_to_server(const char *ip_addr, int port) {
@@ -132,7 +142,7 @@ void event_loop_add_fd(int loop, int fd) {
     ev.events = EPOLLIN;
     ev.data.fd = fd;
     if (epoll_ctl(loop, EPOLL_CTL_ADD, fd, &ev) == -1)
-        perror("event_loop_add_fd");
+        LOGE("event_loop_add_fd, errno %d", errno);
 }
 
 int create_timer_fd() {
@@ -142,11 +152,14 @@ int create_timer_fd() {
 
     struct itimerspec value;
     memset(&value, 0, sizeof(value));
-    value.it_interval.tv_sec = 1;
-    value.it_value.tv_sec = 1;
+    value.it_interval.tv_sec = 20;
+    value.it_value.tv_sec = 20;
 
     if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &value, NULL) == -1)
         LOGE("timerfd_settime");
+    LOGI("timerfd %d", fd);
+
+    return fd;
 }
 
 void start(struct FileDescriptors *fds) {
@@ -181,9 +194,12 @@ char* init(struct FileDescriptors *fds) {
 
     handle_heartbeat(); // init heartbeat time.
 
-//    fds->traffic_info_fd = open(TRAFFIC_INFO_PIPE, O_RDWR|O_CREAT|O_TRUNC);
-//    if (fds->traffic_info_fd == -1)
-//        LOGE("Failed to open %s", TRAFFIC_INFO_PIPE);
+    const char *fifo = "/data/user/0/com.troublemaker.ipv4overipv6/files/"
+            TRAFFIC_INFO_PIPE;
+    mkfifo(fifo, 0666);
+    fds->traffic_info_fd = open(fifo, O_RDWR|O_CREAT|O_TRUNC);
+    if (fds->traffic_info_fd == -1)
+        LOGE("Failed to open %s", TRAFFIC_INFO_PIPE);
 
     return payload;
 }

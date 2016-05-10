@@ -23,40 +23,38 @@ import android.widget.Toast;
 import android.view.View;
 import android.app.Activity;
 
-public class MyVpnService extends VpnService implements Handler.Callback,Runnable {
+public class MyVpnService extends VpnService implements Runnable {
     private static final String TAG = "MyVpnService";
     private Handler mHandler;
     private Thread mThread;
-    private Thread trafficThread;
-    private String mServerAddress;
-    private String mServerPort;
-    private PendingIntent mConfigureIntent;
     private ParcelFileDescriptor myinterface;
-    private String myParameters;
-    private byte[] readTrafficBuf;
-    private boolean ipFlag;
 
     private File extDir;
 
     private File trafficFile;
-    private FileOutputStream trafficFileOutputStream;
-    private  BufferedOutputStream trafficOut;
     private  FileInputStream trafficFileInputStream;
     private BufferedInputStream trafficIn;
-    private  MainActivity mActivity;
-    private TextView showText;
-
+    private long startTime;
+    private long nowTime;
+    private long lastTime;
+    private long lastUpBytes;
+    private long lastDownBytes;
+    private long endTime;
+    private long totalUpBytes;
+    private long totalDownBytes;
+    private long totalUpPackets;
+    private long totalDownPackets;
+    private String ipv4Addr;
+    private String ipv6Addr;
+    private double upSpeed;
+    private double downSpeed;
     private Intent mIntent = new Intent("com.troublemaker.ipv4overipv6.RECEIVER");
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mHandler == null) {
-            mHandler = new Handler(this);
-        }
         if (mThread != null) {
             mThread.interrupt();
         }
-        ipFlag = false;
         mThread = new Thread(this, "MyVpnThread");
         Log.d(TAG, "thread start");
 
@@ -71,24 +69,6 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
         }
     }
 
-    @Override
-    public boolean handleMessage(Message message) {
-        String showText = "none";
-        if (message != null) {
-            if (message.what == 0){
-                showText = "0";
-            }else if (message.what == 1){
-                showText = "1";
-            }else if (message.what == 2){
-                showText = "2";
-            }
-            Toast.makeText(getApplicationContext(), showText,
-                    Toast.LENGTH_SHORT).show();
-            Log.d(TAG, message.toString());
-        }
-        return true;
-    }
-
     static {
         System.loadLibrary("myvpnservice");
     }
@@ -97,63 +77,66 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
 
     @Override
     public synchronized void run() {
-        //TextView tv = (TextView) mActivity.findViewById(R.id.showText);
-        //tv.setText("i changed");
         String ip_info = initBackend();
         Log.d(TAG,ip_info);
+        startTime = System.currentTimeMillis();
+        totalUpBytes = 0;
+        totalUpPackets = 0;
+        totalDownBytes = 0;
+        totalDownPackets = 0;
+        upSpeed = 0;
+        downSpeed = 0;
+        ipv6Addr = "2402:f000:1:4417::900";
+
+        startVPN(ip_info);
+
+        extDir = this.getFilesDir();//获取当前路径
+        Log.d(TAG,extDir.toString());
+
+        trafficFile = new File(extDir, "traffic_info_pipe");
         try {
-            extDir = this.getFilesDir();//获取当前路径
-            Log.d(TAG,extDir.toString());
-
-            trafficFile = new File(extDir,"TRAFFIC_INFO_PIPE");
-            trafficFileOutputStream = new FileOutputStream(trafficFile);
-            trafficOut = new BufferedOutputStream(trafficFileOutputStream);
             trafficFileInputStream = new FileInputStream(trafficFile);
-            trafficIn = new BufferedInputStream(trafficFileInputStream);
-
-            while (true){
-                if (!ipFlag){
-                    if (ip_info.length()>0){
-                        startVPN(ip_info);
-                        ipFlag = true;
-                    }
-                }else{
-                    Log.d(TAG,"XXXXXXXXXXXXXXXXXXXXXXXXX");
-                    int readTrafficLen = trafficIn.read(readTrafficBuf);
-                    Log.d(TAG,readTrafficLen+" sdfasdfasdf");
-                    if (readTrafficLen>0){
-                        showTraffic(readTrafficBuf);
-                        Toast.makeText(getApplicationContext(), readTrafficBuf.toString(),
-                                Toast.LENGTH_SHORT).show();
-                    }
-                }
-                Thread.sleep(2000);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Got " + e.toString());
-        } finally {
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        trafficIn = new BufferedInputStream(trafficFileInputStream);
+        byte[] readTrafficBuf = new byte[4];
+        lastTime = System.currentTimeMillis();
+        lastUpBytes = 0;
+        lastDownBytes = 0;
+        while (true) {
+            Log.d(TAG, "XXXXXXXXXXXXXXXXXXXXXXXXX");
+            int readTrafficLen;
             try {
-                myinterface.close();
-                trafficIn.close();
-                trafficOut.close();
-            } catch (Exception e) {
-                // ignore
+                readTrafficLen = trafficIn.read(readTrafficBuf);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
             }
-            myinterface = null;
-            myParameters = null;
 
-            mHandler.sendEmptyMessage(0);
-            Log.i(TAG, "Exiting");
+            Log.d(TAG, "readTrafficLen: " + readTrafficLen);
+
+            if (readTrafficLen > 0) {
+                showTraffic(readTrafficBuf);
+            }
+
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e1) {
+//                e1.printStackTrace();
+//            }
         }
     }
 
-    private void startVPN(String parameters) throws Exception {
+    private void startVPN(String parameters) {
         Builder builder = new Builder();
         String[] strs = parameters.split(" ");
+        ipv4Addr = strs[0];
         builder.setMtu(1500);
         builder.addAddress(strs[0], 32);
         builder.addRoute(strs[1], 0);
-        builder.addDnsServer(strs[2]);
+        //builder.addDnsServer(strs[2]);
         builder.addDnsServer(strs[3]);
         builder.addDnsServer(strs[4]);
         try {
@@ -162,10 +145,7 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
             // ignore
         }
 
-        myinterface = builder.setSession(mServerAddress)
-                .setConfigureIntent(mConfigureIntent)
-                .establish();
-        myParameters = parameters;
+        myinterface = builder.establish();
         final int k = myinterface.getFd();
         Log.d(TAG, k + "");
         new Thread(new Runnable() {
@@ -175,9 +155,39 @@ public class MyVpnService extends VpnService implements Handler.Callback,Runnabl
             }
         }).start();
     }
-    private void showTraffic(byte[] data) throws Exception {
+    private void showTraffic(byte[] data) {
         //handle the traffic
-        mIntent.putExtra("data", data.toString());
+        byte bLoop;
+
+        int num = 0;
+        for (int i = 0; i < data.length; i++) {
+            bLoop = data[i];
+             num+= (bLoop & 0xFF) << (8 * i);
+        }
+        if (num>0){
+            totalUpBytes +=num;
+            lastUpBytes +=num;
+            totalUpPackets ++;
+        }else{
+            totalDownBytes -=num;
+            lastDownBytes -=num;
+            totalDownPackets ++;
+        }
+        Log.d(TAG,lastUpBytes+"  "+lastDownBytes);
+        nowTime = System.currentTimeMillis();
+        if (nowTime-lastTime>1000){
+            upSpeed = lastUpBytes*1000 / (nowTime-lastTime);
+            downSpeed = lastDownBytes*1000 / (nowTime-lastTime);
+            lastUpBytes = 0;
+            lastDownBytes = 0;
+            lastTime = System.currentTimeMillis();
+        }
+
+        long totalTime = nowTime - startTime;
+
+        String str = totalTime/1000+"s "+upSpeed+"bytes/s "+downSpeed+"bytes/s "+totalUpBytes+"bytes "+totalUpPackets+" "+totalDownBytes+"bytes "+totalDownPackets+" "+ipv4Addr+" "+ipv6Addr;
+        Log.d(TAG,str);
+        mIntent.putExtra("data", str);
         sendBroadcast(mIntent);
     }
 }

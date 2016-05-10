@@ -10,9 +10,165 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:id="@+id/showText"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="77dp"
-        android:text="xxxxxxx" />
+        android:text="运行时间"
+        android:id="@+id/totalTime"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignEnd="@+id/upSpeed" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="上传速度"
+        android:id="@+id/upSpeed"
+        android:layout_marginTop="25dp"
+        android:layout_below="@+id/totalTime"
+        android:layout_alignEnd="@+id/upBytes"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="下载速度"
+        android:id="@+id/downSpeed"
+        android:layout_below="@+id/upSpeed"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="25dp"
+        android:layout_alignEnd="@+id/upBytes" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="上传总流量"
+        android:id="@+id/upBytes"
+        android:layout_below="@+id/downSpeed"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="25dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="上传总包数"
+        android:id="@+id/upPackets"
+        android:layout_below="@+id/upBytes"
+        android:layout_marginTop="25dp"
+        android:layout_alignEnd="@+id/upBytes" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="下载总流量"
+        android:id="@+id/downBytes"
+        android:layout_marginTop="25dp"
+        android:layout_below="@+id/upPackets"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="下载总包数"
+        android:id="@+id/downPackets"
+        android:layout_marginTop="25dp"
+        android:layout_below="@+id/downBytes"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="下联ipv4"
+        android:id="@+id/ipv4Addr"
+        android:layout_marginTop="25dp"
+        android:layout_below="@+id/downPackets"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="上联ipv6"
+        android:id="@+id/ipv6Addr"
+        android:layout_marginTop="25dp"
+        android:layout_below="@+id/ipv4Addr"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/timeText"
+        android:layout_alignParentTop="true"
+        android:layout_alignStart="@+id/upBytesText" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/upSpeedText"
+        android:layout_alignTop="@+id/upSpeed"
+        android:layout_alignStart="@+id/timeText" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/downSpeedText"
+        android:layout_alignTop="@+id/downSpeed"
+        android:layout_alignStart="@+id/upSpeedText" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/upBytesText"
+        android:layout_alignTop="@+id/upBytes"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/upPacketsText"
+        android:layout_alignTop="@+id/upPackets"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/downBytesText"
+        android:layout_alignTop="@+id/downBytes"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/downPacketsText"
+        android:layout_alignTop="@+id/downPackets"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/ipv4Text"
+        android:layout_alignTop="@+id/ipv4Addr"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:text="0"
+        android:id="@+id/ipv6Text"
+        android:layout_alignTop="@+id/ipv6Addr"
+        android:layout_centerHorizontal="true" />
+
 </RelativeLayout>

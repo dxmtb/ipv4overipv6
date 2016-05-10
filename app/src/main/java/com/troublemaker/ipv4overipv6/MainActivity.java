@@ -48,30 +48,35 @@ public class MainActivity extends AppCompatActivity implements Serializable {
     }
     @Override
     protected void onDestroy() {
-        //停止服务
         stopService(intent);
-        //注销广播
         unregisterReceiver(msgReceiver);
         super.onDestroy();
     }
-    public void change(String s){
-        TextView tv = (TextView) findViewById(R.id.showText);
-        tv.setText(s);
-    }
-//    public void showTraffic(byte[] data) throws Exception {
-//        //handle the traffic
-//        TextView tv = (TextView) findViewById(R.id.showText);
-//        tv.setText(data.toString());
-//
-//    }
     public class MsgReceiver extends BroadcastReceiver {
 
         @Override
         public void onReceive(Context context, Intent rintent) {
             //拿到进度，更新UI
             String data = rintent.getStringExtra("data");
-            TextView tv = (TextView) findViewById(R.id.showText);
-            tv.setText(data.toString());
+            String[] strs = data.split(" ");
+            TextView totalTime = (TextView) findViewById(R.id.timeText);
+            totalTime.setText(strs[0]);
+            TextView upSpeed = (TextView) findViewById(R.id.upSpeedText);
+            upSpeed.setText(strs[1]);
+            TextView downSpeed = (TextView) findViewById(R.id.downSpeedText);
+            downSpeed.setText(strs[2]);
+            TextView upBytes = (TextView) findViewById(R.id.upBytesText);
+            upBytes.setText(strs[3]);
+            TextView upPackets = (TextView) findViewById(R.id.upPacketsText);
+            upPackets.setText(strs[4]);
+            TextView downBytes = (TextView) findViewById(R.id.downBytesText);
+            downBytes.setText(strs[5]);
+            TextView downPacktes = (TextView) findViewById(R.id.downPacketsText);
+            downPacktes.setText(strs[6]);
+            TextView ipv4 = (TextView) findViewById(R.id.ipv4Text);
+            ipv4.setText(strs[7]);
+            TextView ipv6 = (TextView) findViewById(R.id.ipv6Text);
+            ipv6.setText(strs[8]);
         }
 
     }

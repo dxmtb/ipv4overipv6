@@ -7,6 +7,7 @@
 #define TRAFFIC_INFO_PIPE "traffic_info_pipe"
 
 #define MAX_HEARTBEAT_SEC 60
+#define MAX_HEARTBEAT_TO_SERVER_SEC 20
 #define MAX_BUF_LEN 4096
 
 enum {
