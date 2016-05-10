@@ -132,7 +132,7 @@ void event_loop_add_fd(int loop, int fd) {
     ev.events = EPOLLIN;
     ev.data.fd = fd;
     if (epoll_ctl(loop, EPOLL_CTL_ADD, fd, &ev) == -1)
-        LOGE("event_loop_add_fd");
+        perror("event_loop_add_fd");
 }
 
 int create_timer_fd() {
